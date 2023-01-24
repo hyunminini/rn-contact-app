@@ -1,100 +1,126 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { SafeAreaView, View, Text, TouchableOpacity, Dimensions, TextInput } from "react-native";
 import styled from "styled-components";
 import Modal from 'react-native-modal';
 import { getStatusBarHeight } from 'react-native-status-bar-height';
 import { getBottomSpace } from 'react-native-iphone-x-helper'
 import axios from "axios";
+
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
-const AddModal = (Props: any): React.ReactElement => {
-   const [nameValue, setNameValue] = useState<String>('');
-   const [phoneNumberValue, setPhoneNumberValue] = useState<String>('');
-   const [emailValue, setEmailValue] = useState<String>('');    
+const EditModals = (Props: any): React.ReactElement => {
 
-   const nameHandleChange = (e:any) => {
-    setNameValue(e.nativeEvent.text);
-   }
-   const phoneNumberHandleChange = (e:any) => {
-    const regex = /^[0-9\b -]{0,13}$/;
-    if (regex.test(e.nativeEvent.text)) {
-        setPhoneNumberValue(e.nativeEvent.text);
+    useEffect(() => {
+        setEditName(Props.editData.name);
+        setEditPhoneNumber(Props.editData.phoneNumber);
+        setEditEmail(Props.editData.email);
+    }, [Props.editModal]);
+
+    const [editName, setEditName] = useState<String>('');
+    const [editPhoneNumber, setEditPhoneNumber] = useState<String>('');
+    const [editEmail, setEditEmail] = useState<String>('');
+
+    const editSubmit = async() => {
+        const userNo = Props.editData.userNo;
+        const name = editName;
+        const phoneNumber = editPhoneNumber;
+        const email = editEmail;
+        
+        axios.put(`http://172.30.1.92:8080/contact/${Props.editData.userNo}`, {userNo, name, phoneNumber, email});
+
+        setTimeout(() => {
+            Props.getUserList();
+        }, 200)
+        Props.setEditModal(false)
+    }  
+
+
+    const editNameHandler = (e:any) => {
+        e.preventDefault();
+        setEditName(e.nativeEvent.text);
+      }
+    
+    const editPhoneNumberHandler = (e:any) => {
+        const regex = /^[0-9\b -]{0,13}$/;
+        if (regex.test(e.nativeEvent.text)) {
+            setEditPhoneNumber(e.nativeEvent.text);
+        }
     }
-  }
-  
-   const emailHandleChange = (e:any) => {
-    setEmailValue(e.nativeEvent.text);
-   }
 
-   const addSubmit = async() => {
-    const name = nameValue;
-    const phoneNumber = phoneNumberValue;
-    const email = emailValue;
-    axios.post('http://172.30.1.92:8080/contact/add', {name, phoneNumber, email});
-
-    Props.setAddModal(false);
-   }
-
-  useEffect(() => {
-    if (phoneNumberValue.length === 10) {
-        setPhoneNumberValue(phoneNumberValue.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'));
+    const editEmailHandler = (e:any) => {
+        e.preventDefault();
+        setEditEmail(e.nativeEvent.text);
     }
-    if (phoneNumberValue.length === 13) {
-        setPhoneNumberValue(phoneNumberValue.replace(/-/g, '').replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3'));
+
+    useEffect(() => {
+        if (editPhoneNumber) {
+            setEditPhoneNumber(editPhoneNumber.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'));
+        }
+        if (editPhoneNumber) {
+            setEditPhoneNumber(editPhoneNumber.replace(/-/g, '').replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3'));
+        }
+      }, [editPhoneNumber]);
+
+    const editClose = () => {
+        setEditName('');
+        setEditPhoneNumber('');
+        setEditEmail('');
+        console.log("----")
     }
-  }, [phoneNumberValue]);
+
 
     return (
         <StyledSafeAreaView>
             <Modal
-                isVisible={Props.addModal}
+                isVisible={Props.editModal}
                 useNativeDriver={true}
                 hideModalContentWhileAnimating={true}
                 style={{ justifyContent: "center", alignItems: "center" }}
             >
-                <AddModalContainer>
+                <EditModalContainer>
                     <ButtonWrap>
                         <StyledButton onPress={() => {
-                            Props.setAddModal(false);
+                            Props.setEditModal(false);
+                            editClose()
                         }}>
                             <ButtonText>취소</ButtonText>
                         </StyledButton>
-                        <AddTitle>새로운 연락처</AddTitle>
-                        <StyledButton>
-                            <ButtonText onPress={addSubmit}>완료</ButtonText>
+                        <EditTitle>연락처 수정</EditTitle>
+                        <StyledButton onPress={editSubmit}>
+                            <ButtonText>완료</ButtonText>
                         </StyledButton>
                     </ButtonWrap>
-                    <AddImg>
+                    <EditImg>
                         <Text>이미지</Text>
-                    </AddImg>
+                    </EditImg>
                     
                     <InputBoxWrap>
                         <InputBox 
                             placeholder='이름을 입력해주세요.'
                             type='text'
-                            onChange={nameHandleChange}
-                            value={nameValue}
                             autoFocus={true}
                             required
+                            onChange={editNameHandler}
+                            defaultValue={editName}
                          />
                         <InputBox 
                             placeholder='전화번호를 입력해주세요.'
                             type='tel' 
-                            onChange={phoneNumberHandleChange} 
                             onkeypress='return checkNumber(event)'
-                            value={phoneNumberValue}
                             required
+                            onChange={editPhoneNumberHandler}
+                            defaultValue={editPhoneNumber}
                          />
                         <InputBox 
                             placeholder='이메일을 입력해주세요.'
                             type='email'
                             pattern=".+@douzone\.com"
-                            onChange={emailHandleChange}
-                            value={emailValue}
+                            onChange={editEmailHandler}
+                            defaultValue={editEmail}
                          />
                     </InputBoxWrap>
-                </AddModalContainer>
+                </EditModalContainer>
             </Modal>
         </StyledSafeAreaView>
     );
@@ -106,14 +132,15 @@ const StyledSafeAreaView = styled.View`
     align-items: center;
 `
 
-const AddModalContainer = styled.View`
+const EditModalContainer = styled.View`
     flex-direction: column;
     align-items: center;
     position: absolute;
-    bottom: -20;
+    bottom: -20px;
     margin: 0;
     padding: 0;
     background-color: rgba(255, 255, 255, 1);
+    border-radius: 10px;
     height: ${({height}) => windowHeight - 50}px;
     background-color: #e9e9e9;
 `
@@ -134,14 +161,14 @@ const ButtonText = styled.Text`
     color: #666;
 `
 
-const AddTitle = styled.Text`
+const EditTitle = styled.Text`
     font-size: 16px;
     padding: 15px;
     color: #333;
     font-weight: 600;
 `
 
-const AddImg = styled.View`
+const EditImg = styled.View`
     width: 140px;
     height: 140px;
     border-radius: 9999px;
@@ -165,7 +192,7 @@ const InputBox = styled.TextInput`
 
 `
 
-export default AddModal;
+export default EditModals;
 
 
 

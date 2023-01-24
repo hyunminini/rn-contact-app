@@ -55,7 +55,7 @@ const DetailsScreen: React.FunctionComponent<DetailsScreenProps> = props => {
     <SafeAreaView style={styles.container}>
       <View>
         <Text>{content.name}</Text>
-        <Text>{content.phonenumber}</Text>
+        <Text>{content.phoneNumber}</Text>
       </View>
     </SafeAreaView>
   );
