@@ -1,38 +1,75 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, View, Text, TouchableOpacity, Dimensions, TextInput } from "react-native";
+import { SafeAreaView, View, Text, TouchableOpacity, Dimensions, TextInput, Image, Alert } from "react-native";
 import styled from "styled-components";
 import Modal from 'react-native-modal';
-import { getStatusBarHeight } from 'react-native-status-bar-height';
-import { getBottomSpace } from 'react-native-iphone-x-helper'
 import axios from "axios";
+import { API_URL } from "@env";
+import { useUserEdit } from "../../ApiData/ContactApi/userData";
+
+let profileIconPath = require('../../Assets/Icons/basic-profile.jpg');
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
 const EditModals = (Props: any): React.ReactElement => {
+    const{ 
+        getUsers, 
+        setEditModal,
+        editModal,
+        editData,
+    } = Props;
+
+    const onSuccess = (data:any) => {
+      console.log("Data")
+    };
+
+    const onError = (error:any) => {
+      console.log("Data Fetching Fail..", error);
+    };
+
+    const { isLoading, data, isError, error, refetch } = useUserEdit({
+      onSuccess,
+      onError,
+    });
+
+    if (isLoading) return <Text>Loading...!!</Text>;
+    if (isError) return <Text>Error...!!</Text>;
 
     useEffect(() => {
-        setEditName(Props.editData.name);
-        setEditPhoneNumber(Props.editData.phoneNumber);
-        setEditEmail(Props.editData.email);
-    }, [Props.editModal]);
+        setEditName(editData.name);
+        setEditPhoneNumber(editData.phoneNumber);
+        setEditEmail(editData.email);
+    }, [editModal]);
 
     const [editName, setEditName] = useState<String>('');
     const [editPhoneNumber, setEditPhoneNumber] = useState<String>('');
     const [editEmail, setEditEmail] = useState<String>('');
 
     const editSubmit = async() => {
-        const userNo = Props.editData.userNo;
+        const userNo = editData.userNo;
         const name = editName;
         const phoneNumber = editPhoneNumber;
         const email = editEmail;
-        
-        axios.put(`http://172.30.1.92:8080/contact/${Props.editData.userNo}`, {userNo, name, phoneNumber, email});
 
-        setTimeout(() => {
-            Props.getUserList();
-        }, 200)
-        Props.setEditModal(false)
+        Alert.alert(
+            "수정을 완료하시겠습니까?",
+            "",
+            [
+              {
+                text: "완료",
+                onPress: () => {
+                    axios.put(`${API_URL}/contact/${editData.userNo}`, {userNo, name, phoneNumber, email});
+
+                    setTimeout(() => {
+                        getUsers();
+                    }, 300)
+                    setEditModal(false)
+                },
+              },
+              { text: "취소", onPress: () => console.log("수정진행 취소!!") },          
+            ],
+            { cancelable: false }
+        );
     }  
 
 
@@ -66,14 +103,13 @@ const EditModals = (Props: any): React.ReactElement => {
         setEditName('');
         setEditPhoneNumber('');
         setEditEmail('');
-        console.log("----")
     }
 
 
     return (
         <StyledSafeAreaView>
             <Modal
-                isVisible={Props.editModal}
+                isVisible={editModal}
                 useNativeDriver={true}
                 hideModalContentWhileAnimating={true}
                 style={{ justifyContent: "center", alignItems: "center" }}
@@ -81,7 +117,7 @@ const EditModals = (Props: any): React.ReactElement => {
                 <EditModalContainer>
                     <ButtonWrap>
                         <StyledButton onPress={() => {
-                            Props.setEditModal(false);
+                            setEditModal(false);
                             editClose()
                         }}>
                             <ButtonText>취소</ButtonText>
@@ -92,7 +128,10 @@ const EditModals = (Props: any): React.ReactElement => {
                         </StyledButton>
                     </ButtonWrap>
                     <EditImg>
-                        <Text>이미지</Text>
+                        <Image 
+                            style={{width: 150, height: 150, borderRadius: 9999}}
+                            source={profileIconPath}
+                        />
                     </EditImg>
                     
                     <InputBoxWrap>
@@ -169,10 +208,6 @@ const EditTitle = styled.Text`
 `
 
 const EditImg = styled.View`
-    width: 140px;
-    height: 140px;
-    border-radius: 9999px;
-    background-color: #b9b9b9;
     justify-content: center;
     align-items: center;
     margin-top: 20px;

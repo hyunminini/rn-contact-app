@@ -1,26 +1,40 @@
 import React, { useState, useRef, useEffect } from "react";
-import { SafeAreaView, View, Text, TouchableOpacity, Dimensions, TextInput, Pressable } from "react-native";
-import styled from "styled-components";
+import { SafeAreaView, View, Alert, Text, TouchableOpacity, Dimensions, TextInput, Pressable } from "react-native";
+import styled from "styled-components/native";
 import Modal from 'react-native-modal';
 import axios from "axios";
+import { API_URL } from "@env";
+
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
 const DeleteModal = (Props: any): React.ReactElement => {
 
-    const deleteSubmit = () => {
     const userNo = Props.selectUser.userNo;
     const name = Props.selectUser.name;
     const phoneNumber = Props.selectUser.phoneNumber;
-    const status = "F";
-    
-    axios.put(`http://172.30.1.92:8080/contact/delete/${Props.selectUser.userNo}`, {userNo, name, phoneNumber, status});
+    const status = "";
 
-    setTimeout(() => {
-        Props.getUserList();
-    }, 200)
-
-    Props.setDeleteModal(false)
+    const deleteSubmit = () => {
+        Alert.alert(
+            `${Props.selectUser.name}님을 삭제하시겠습니까?`,
+            "삭제 후 일주일간 삭제목록에 보관됩니다.",
+            [
+              {
+                text: "완료",
+                onPress: () => {
+                    axios.put(`${API_URL}/contact/delete/${Props.selectUser.userNo}`, {userNo, name, phoneNumber, status});
+                    setTimeout(() => {
+                        Props.getUsers();
+                    }, 200)
+                
+                    Props.setDeleteModal(false)
+                },
+              },
+              { text: "취소", onPress: () => console.log("수정진행 취소!!") },          
+            ],
+            { cancelable: false }
+        );    
   }   
 
     return (
@@ -77,7 +91,7 @@ const ButtonWrap = styled.View`
 const StyledButton = styled.TouchableOpacity`
     justify-content: center;
     background-color: #fff;
-    width: ${({width}) => windowWidth - 30}px;
+    width: ${windowWidth - 30}px;
     border-radius: 10px;
     margin-top: 5px;
     margin-bottom: 5px;

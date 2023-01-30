@@ -1,17 +1,25 @@
 import React, { useState, useRef, useEffect } from "react";
-import { SafeAreaView, View, Text, TouchableOpacity, Dimensions, TextInput } from "react-native";
-import styled from "styled-components";
+import { SafeAreaView, View, Text, TouchableOpacity, Dimensions, TextInput, Image, StyleSheet, ScrollView, Alert } from "react-native";
+import styled from "styled-components/native";
 import Modal from 'react-native-modal';
-import { getStatusBarHeight } from 'react-native-status-bar-height';
-import { getBottomSpace } from 'react-native-iphone-x-helper'
 import axios from "axios";
+import { API_URL } from "@env";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+
+let profileIconPath = require('../../Assets/Icons/basic-profile.jpg');
+
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
 const AddModal = (Props: any): React.ReactElement => {
+   const { setAddModal } = Props;
    const [nameValue, setNameValue] = useState<String>('');
    const [phoneNumberValue, setPhoneNumberValue] = useState<String>('');
-   const [emailValue, setEmailValue] = useState<String>('');    
+   const [emailValue, setEmailValue] = useState<String>('');
+   
+   const name = nameValue;
+   const phoneNumber = phoneNumberValue;
+   const email = emailValue;
 
    const nameHandleChange = (e:any) => {
     setNameValue(e.nativeEvent.text);
@@ -22,18 +30,37 @@ const AddModal = (Props: any): React.ReactElement => {
         setPhoneNumberValue(e.nativeEvent.text);
     }
   }
+
+  const mutationAdd = useMutation({
+    mutationFn: async (newUser) => {
+        await  axios.post(`${API_URL}/contact/add`, {name, phoneNumber, email});
+    }
+  });
   
    const emailHandleChange = (e:any) => {
     setEmailValue(e.nativeEvent.text);
    }
 
    const addSubmit = async() => {
-    const name = nameValue;
-    const phoneNumber = phoneNumberValue;
-    const email = emailValue;
-    axios.post('http://172.30.1.92:8080/contact/add', {name, phoneNumber, email});
+    Alert.alert(
+        `${name}님을 생성하시겠습니까?`,
+        "",
+        [
+          {
+            text: "완료",
+            onPress: () => {
+                // axios.post(`${API_URL}/contact/add`, {name, phoneNumber, email});
+                mutationAdd.mutate()
+                setTimeout(() => {
+                    setAddModal(false);
+                }, 50)
+            },
+          },
+          { text: "취소", onPress: () => console.log("연락처 생성 취소!!") },          
+        ],
+        { cancelable: false }
+    );
 
-    Props.setAddModal(false);
    }
 
   useEffect(() => {
@@ -65,11 +92,15 @@ const AddModal = (Props: any): React.ReactElement => {
                             <ButtonText onPress={addSubmit}>완료</ButtonText>
                         </StyledButton>
                     </ButtonWrap>
+                    <ScrollView>
                     <AddImg>
-                        <Text>이미지</Text>
+                        <Image 
+                            style={{width: 150, height: 150, borderRadius: 9999}}
+                            source={profileIconPath}
+                        />
                     </AddImg>
                     
-                    <InputBoxWrap>
+                    <View style={styles.InputBoxWrap}>
                         <InputBox 
                             placeholder='이름을 입력해주세요.'
                             type='text'
@@ -93,12 +124,32 @@ const AddModal = (Props: any): React.ReactElement => {
                             onChange={emailHandleChange}
                             value={emailValue}
                          />
-                    </InputBoxWrap>
+                    </View>
+                    </ScrollView>
                 </AddModalContainer>
             </Modal>
         </StyledSafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    addTitle: {
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+    },
+    InputBoxWrap: {
+        width: windowWidth,
+        marginTop: 35,
+        shadowColor: "#000",
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.20,
+        shadowRadius: 1.41,
+        elevation: 2,
+    },
+})
 
 const StyledSafeAreaView = styled.View`
     flex: 1;
@@ -114,7 +165,7 @@ const AddModalContainer = styled.View`
     margin: 0;
     padding: 0;
     background-color: rgba(255, 255, 255, 1);
-    height: ${({height}) => windowHeight - 50}px;
+    height: ${ windowHeight - 50}px;
     background-color: #e9e9e9;
 `
 
@@ -142,27 +193,15 @@ const AddTitle = styled.Text`
 `
 
 const AddImg = styled.View`
-    width: 140px;
-    height: 140px;
-    border-radius: 9999px;
-    background-color: #b9b9b9;
     justify-content: center;
     align-items: center;
     margin-top: 20px;
 `
-const InputBoxWrap = styled.View`
-    background-color: red;
-    width: 100%;
-    margin-top: 35px;
-`
-
 const InputBox = styled.TextInput`
     border-color: #ccc;
     border-width: 0.5px;
     background-color: #fff;
-    padding: 15px 20px 15px 20px;
-    width: 100%;
-
+    padding: 15px 15px 15px 15px;
 `
 
 export default AddModal;

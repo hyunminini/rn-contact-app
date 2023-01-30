@@ -1,43 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { 
     SafeAreaView, 
-    Text,
-    View, 
-    TouchableOpacity, 
-    Image,
     Dimensions
   } from 'react-native';
-import {
-  HomeScreens,
-  HomeStackParamList,
-} from '../Navigators/HomeStackNavigators';
-import {StackNavigationProp} from '@react-navigation/stack';
 import axios from 'axios';
-import styled from 'styled-components';
+import styled from 'styled-components/native';
+import { DeleteData } from '../ApiData/interface';
+import DeleteScreenModal from '../Components/Modal/DeleteScreenModals/DeleteScreenModal';
+import { API_URL } from "@env";
+import DeleteUserList from '../Components/DeleteUserList';
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
-type DeleteListScreenNavigationProps = StackNavigationProp<
-  HomeStackParamList,
-  HomeScreens.Details
->;
-
-// DetailsScreen Props 의 타입들을 지정. (리액트에서 proptypes 지정하는 것 처럼)
-interface DeleteListScreenProps {
-  route: {params: DeleteListParams}; // 루트의 파라미터로 방금 지정해준 DetailsParams 타입이 온다.
-  navigation: DeleteListScreenNavigationProps;
-}
-
-const DeleteListScreen: React.FunctionComponent<DeleteListScreenProps> = props => {
-  const {navigation, route} = props;
-  const {params} = route;
-  type DeleteData = { userNo: number; name: string; phonenumber: string; email: string, status: string, deleteTime: string};
+const DeleteListScreen = (Props:any) => {
+  const {route} = Props;
   const [deleteList, setDeletelist] = useState<Array<DeleteData>>([]);
   const [filterSearch, setFilterSearch] = useState<String>('');
-
+  const [deleteScreenModal, setDeleteScreenModal] = useState<boolean>(false);
+  const [selectDelUser, setSelectDelUser] = useState<Array<DeleteData>>([]);
+ 
   const getDeleteList = async () => {
-    const res = await axios.get('http://172.30.1.92:8080/contact/delete/all');
+    const res = await axios.get(`${API_URL}/contact/delete/all`);
     setDeletelist(res.data);
   }
 
@@ -46,60 +30,34 @@ const DeleteListScreen: React.FunctionComponent<DeleteListScreenProps> = props =
     setFilterSearch(e.nativeEvent.text);
   }
   
-    useEffect(() => {
-      getDeleteList();
-    }, []);
+  useEffect(() => {
+    getDeleteList();
+  }, []);
 
   return (
     <SafeAreaView >
-
-    <UserSearch 
+      <DeleteScreenModal 
+        deleteScreenModal={deleteScreenModal}
+        setDeleteScreenModal={setDeleteScreenModal}
+        selectDelUser={selectDelUser}
+        setSelectDelUser={setSelectDelUser}
+        getDeleteList={getDeleteList}
+      />
+      <UserSearch 
           placeholder='이름을 입력해주세요.'
           value={filterSearch}
           onChange={searchNameHandler}
-    /> 
-    <ConTactScrollView>             
-        {deleteList.filter((searchData) => 
-          filterSearch == '' 
-          ? true 
-          : (searchData.name
-            ? searchData.name.includes(
-              filterSearch,
-            )
-          : false) ||
-          (searchData.name
-            ? searchData.name.includes(
-              filterSearch,
-            )
-          : false),
-          ) 
-          .map((content, key) => {
-            return (       
-                <ContactContainer navigation={navigation}>
-                  <TouchableOpacity onPress={() => navigation.navigate(HomeScreens.Details, {content})}>
-                    <ContactData>
-                      <View>
-                        <Title>{content.name}</Title>
-                        <Phonenumber>{content.phoneNumber}</Phonenumber>
-                        <Text>삭제ID: </Text>
-                        <Text>삭제시간: {content.deleteTime}</Text>
-                      </View>
-                      <ContactButtonContainer>
-                        <TouchableOpacity 
-                          style={{marginRight: 3}}
-                          onPress={() => {setEditModal(true), setEditData(content)}}
-                        >
-             
-                        </TouchableOpacity>
-                      </ContactButtonContainer>
-                    </ContactData>
-                  </TouchableOpacity>
-                </ContactContainer>  
-            )
-        })}
+      /> 
+    <ConTactScrollView>  
+        <DeleteUserList 
+          deleteList={deleteList}
+          filterSearch={filterSearch}
+          setDeleteScreenModal={setDeleteScreenModal}
+          setSelectDelUser={setSelectDelUser}
+        />           
     </ConTactScrollView>
     <ContactFooter> 
-      <FooterContent>30일 후에 완전 삭제됩니다.</FooterContent>
+      <FooterContent>일주일 경과되면 삭제됩니다.</FooterContent>
     </ContactFooter>
 </SafeAreaView>
   );
@@ -112,44 +70,17 @@ const UserSearch = styled.TextInput`
   border-color: #ccc;
 `
 
-const ContactContainer = styled.ScrollView`
-    border-bottom-width: 1;
-    border-color: #ccc;
-    padding: 15px 10px 15px 10px;
-`
 const ConTactScrollView = styled.ScrollView`
-    height: ${({height}) => windowHeight - 230}px;
+    height: ${windowHeight - 230}px;
 `
 
-const ContactData = styled.View`
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-`
-
-const Title = styled.Text`
-    font-size: 16px;
-    font-weight: 600;
-    align-items: flex-end;
-    padding-bottom: 3px;
-`;
-
-const Phonenumber = styled.Text`
-    font-size:16px;
-    font-weight: 600;
-    align-items: flex-end;
-`;
-
-const ContactButtonContainer = styled.View`
-    flex-direction: row;
-`
 const ContactFooter = styled.View`
   flex-direction: row;
   background-color: #e9e9e9;
   border-top-width: 1px;
   border-color: #ccc;
   justify-content: center;
-  height: ${({height}) => windowHeight};
+  height: ${windowHeight};
 `
 
 const FooterContent = styled.Text`
